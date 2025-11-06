@@ -30,6 +30,16 @@ double T;       // Temperature
 double J = 1.0; // Coupling constant
 int **lattice;
 
+double exp_values[5];
+
+void precomputeBoltzmannFactors() {
+  // For dE values: -8J, -4J, 0, 4J, 8J
+  for (int i = 0; i < 5; i++) {
+    double dE = -8.0*J + 4.0*J*i;
+    exp_values[i] = exp(-dE / T);
+  }
+}
+
 void initializeLattice() {
   lattice = (int **)malloc(sizeof(int *) * L);
   for (int i = 0; i < L; i++) {
@@ -60,6 +70,7 @@ double calculateTotalEnergy() {
 
 double calculateMagnetization() {
   double mag = 0.0;
+
   for (int i = 0; i < L; i++) {
     for (int j = 0; j < L; j++) {
       mag += lattice[i][j];
@@ -68,25 +79,7 @@ double calculateMagnetization() {
   return mag / (L * L);
 }
 
-// void metropolisHastingsStep() {
-//   int i = (int)(randomDouble() * L);
-//   int j = (int)(randomDouble() * L);
-
-//   double E_before = calculateTotalEnergy();
-//   lattice[i][j] *= -1;
-//   double E_after = calculateTotalEnergy();
-//   double dE = E_after - E_before;
-
-//   if (dE <= 0.0) {
-//     return;
-//   }
-
-//   double prob = exp(-dE / T);
-//   if (randomDouble() >= prob) {
-//     lattice[i][j] *= -1;
-//   }
-// }
-
+// Optimization: Only compute energy difference for the flipped spin --> O(L^2) to O(1)
 void metropolisHastingsStep() {
   int i = (int)(randomDouble() * L);
   int j = (int)(randomDouble() * L);
@@ -108,7 +101,9 @@ void metropolisHastingsStep() {
     return;
   }
 
-  double prob = exp(-dE / T);
+  int sum_neighbors = up + down + left + right;
+  int idx = (sum_neighbors + 4) / 2;
+  double prob = exp_values[idx];
   if (randomDouble() >= prob) {
     lattice[i][j] *= -1;
   }
@@ -220,6 +215,7 @@ int main(int argc, const char **argv) {
   printf("Number of Metropolis-Hastings steps: %d\n", steps);
   printf("=================================================\n\n");
 
+  precomputeBoltzmannFactors();
   initializeLattice();
 
   double initial_energy = calculateTotalEnergy();
