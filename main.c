@@ -30,6 +30,16 @@ double T;       // Temperature
 double J = 1.0; // Coupling constant
 int **lattice;
 
+double exp_values[5];
+
+void precomputeBoltzmannFactors() {
+  // For dE values: -8J, -4J, 0, 4J, 8J
+  for (int i = 0; i < 5; i++) {
+    double dE = -8.0*J + 4.0*J*i;
+    exp_values[i] = exp(-dE / T);
+  }
+}
+
 void initializeLattice() {
   lattice = (int **)malloc(sizeof(int *) * L);
   for (int i = 0; i < L; i++) {
@@ -90,7 +100,9 @@ void metropolisHastingsStep() {
     return;
   }
 
-  double prob = exp(-dE / T);
+  int sum_neighbors = up + down + left + right;
+  int idx = (sum_neighbors + 4) / 2;
+  double prob = exp_values[idx];
   if (randomDouble() >= prob) {
     lattice[i][j] *= -1;
   }
@@ -202,6 +214,7 @@ int main(int argc, const char **argv) {
   printf("Number of Metropolis-Hastings steps: %d\n", steps);
   printf("=================================================\n\n");
 
+  precomputeBoltzmannFactors();
   initializeLattice();
 
   double initial_energy = calculateTotalEnergy();
