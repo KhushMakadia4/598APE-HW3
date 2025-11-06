@@ -68,25 +68,7 @@ double calculateMagnetization() {
   return mag / (L * L);
 }
 
-// void metropolisHastingsStep() {
-//   int i = (int)(randomDouble() * L);
-//   int j = (int)(randomDouble() * L);
-
-//   double E_before = calculateTotalEnergy();
-//   lattice[i][j] *= -1;
-//   double E_after = calculateTotalEnergy();
-//   double dE = E_after - E_before;
-
-//   if (dE <= 0.0) {
-//     return;
-//   }
-
-//   double prob = exp(-dE / T);
-//   if (randomDouble() >= prob) {
-//     lattice[i][j] *= -1;
-//   }
-// }
-
+// Optimization: Only compute energy difference for the flipped spin --> O(L^2) to O(1)
 void metropolisHastingsStep() {
   int i = (int)(randomDouble() * L);
   int j = (int)(randomDouble() * L);
