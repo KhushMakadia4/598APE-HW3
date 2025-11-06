@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <omp.h>
 
 float tdiff(struct timeval *start, struct timeval *end) {
   return (end->tv_sec - start->tv_sec) + 1e-6 * (end->tv_usec - start->tv_usec);
@@ -43,6 +44,7 @@ void initializeLattice() {
 double calculateTotalEnergy() {
   double energy = 0.0;
 
+  #pragma omp parallel for collapse(2) reduction(+:energy)
   for (int i = 0; i < L; i++) {
     for (int j = 0; j < L; j++) {
       int spin = lattice[i][j];
@@ -60,6 +62,8 @@ double calculateTotalEnergy() {
 
 double calculateMagnetization() {
   double mag = 0.0;
+  
+  #pragma omp parallel for collapse(2) reduction(+:mag)
   for (int i = 0; i < L; i++) {
     for (int j = 0; j < L; j++) {
       mag += lattice[i][j];
@@ -68,42 +72,15 @@ double calculateMagnetization() {
   return mag / (L * L);
 }
 
-// void metropolisHastingsStep() {
-//   int i = (int)(randomDouble() * L);
-//   int j = (int)(randomDouble() * L);
-
-//   double E_before = calculateTotalEnergy();
-//   lattice[i][j] *= -1;
-//   double E_after = calculateTotalEnergy();
-//   double dE = E_after - E_before;
-
-//   if (dE <= 0.0) {
-//     return;
-//   }
-
-//   double prob = exp(-dE / T);
-//   if (randomDouble() >= prob) {
-//     lattice[i][j] *= -1;
-//   }
-// }
-
 void metropolisHastingsStep() {
   int i = (int)(randomDouble() * L);
   int j = (int)(randomDouble() * L);
 
-  int spin = lattice[i][j];
-  
-  int up = lattice[(i - 1 + L) % L][j];
-  int down = lattice[(i + 1) % L][j];
-  int left = lattice[i][(j - 1 + L) % L];
-  int right = lattice[i][(j + 1) % L];
-  
+  double E_before = calculateTotalEnergy();
   lattice[i][j] *= -1;
-
-  double E_before = -J * spin * (up + down + left + right);
-  double E_after = -J * (-spin) * (up + down + left + right);
+  double E_after = calculateTotalEnergy();
   double dE = E_after - E_before;
-  
+
   if (dE <= 0.0) {
     return;
   }
