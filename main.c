@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 #include <sys/time.h>
 
 float tdiff(struct timeval *start, struct timeval *end) {
@@ -53,6 +54,7 @@ void initializeLattice() {
 double calculateTotalEnergy() {
   double energy = 0.0;
 
+  #pragma omp parallel for collapse(2) reduction(+:energy)
   for (int i = 0; i < L; i++) {
     for (int j = 0; j < L; j++) {
       int spin = lattice[i][j];
@@ -71,6 +73,7 @@ double calculateTotalEnergy() {
 double calculateMagnetization() {
   double mag = 0.0;
 
+  #pragma omp parallel for collapse(2) reduction(+:mag)
   for (int i = 0; i < L; i++) {
     for (int j = 0; j < L; j++) {
       mag += lattice[i][j];
